@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     /* adding classname = dark to use darkmode */
-    <html lang="en" className="dark" >
+    <html lang="en" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
