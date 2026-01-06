@@ -1,5 +1,4 @@
 'use client';
-
 import { useEffect, useRef } from 'react';
 
 const useTradingViewWidget = (scriptURL : string, config: Record<string, unknown>, height = 600 ) => {

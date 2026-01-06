@@ -12,13 +12,14 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import NavItems from "./NavItems";
 import { LogOut } from "lucide-react";
+import { signOut } from "@/lib/actions/auth.actions";
 
-const UserDropdown = () => {
+const UserDropdown = ({ user }:{ user: User}) => {
     const router = useRouter();
     const handleSignOut = async () => {
-        router.push('/sign-in')
+        await signOut()
+        router.push('/')
     }
-    const user = { username: 'jotasvec', email: 'jotasvec@gmail.com' }
   return (
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -26,12 +27,12 @@ const UserDropdown = () => {
                 <Avatar className="h-8 w-8">
                     <AvatarImage src="https://unavatar.io/x/jotasvec" />
                     <AvatarFallback className="bg-yellow-500 text-yellow-900 text-sm font-bold" >
-                        {user.username[0]}
+                        {user.name[0]}
                     </AvatarFallback>
                 </Avatar>
                 <div className="hidden md-flex flex-col items-start">
                     <span className="text-base font-medium text-gray-400">
-                        {user.username}
+                        {user.name}
                     </span>
                 </div>
             </Button>
@@ -42,12 +43,12 @@ const UserDropdown = () => {
                     <Avatar className="h-10 w-10">
                         <AvatarImage src="https://unavatar.io/x/jotasvec" />
                         <AvatarFallback className="bg-yellow-500 text-yellow-900 text-sm font-bold" >
-                            {user.username}
+                            {user.name}
                         </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
                         <span className="text-base font-medium text-gray-400">
-                            {user.username}
+                            {user.name}
                         </span>
                         <span className="text-sm text-gray-500">
                             {user.email}
