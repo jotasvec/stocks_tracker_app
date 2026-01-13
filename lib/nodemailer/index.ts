@@ -1,6 +1,10 @@
 import nodemailer from "nodemailer";
 import { NEWS_SUMMARY_EMAIL_TEMPLATE, WELCOME_EMAIL_TEMPLATE } from "./templates";
 
+if (!process.env.NODEMAILER_FROM_EMAIL) {
+    throw new Error('NODEMAILER_FROM_EMAIL environment variable is required');
+}
+
 export const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth:{
@@ -15,7 +19,7 @@ export const sendWelcomeEmail = async ({ email, name, intro }: WelcomeEmailData)
         .replace('{{intro}}', intro);
     
     const mailOptions = {
-        from: `"Signalist" <cureteylor1@gmail.com>`,
+        from: `"Signalist" <${process.env.NODEMAILER_FROM_EMAIL}>`,
         to: email,
         subject: "Welcome to Signalist",
         text: 'Thanks for joining to Signalist',
@@ -38,7 +42,7 @@ export const sendDailySummaryEmails = async (
         .replace('{{newsContent}}', newsContent);
     
     const mailOptions = {
-        from: `"Signalist news" <cureteylor1@gmail.com>`,
+        from: `"Signalist news" <${process.env.NODEMAILER_FROM_EMAIL}>`,
         to: email,
         subject: `Market News Summary today ${date}`,
         text: `Today's markets news summary from Signlist`,
