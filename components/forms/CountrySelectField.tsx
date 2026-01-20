@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Label } from '../ui/label';
 import { Controller } from 'react-hook-form';
 import countryList from 'react-select-country-list';
@@ -39,18 +39,7 @@ function CommandCountry({ value, onChange } : { value: string, onChange: (value:
         return String.fromCodePoint(...codePoints)
     }
 
-    useEffect(() => {
-        const down = (e: KeyboardEvent) => {
-        if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-            e.preventDefault()
-            setOpen((open) => !open)
-        }
-        }
-        document.addEventListener("keydown", down)
-        return () => document.removeEventListener("keydown", down)
-        
-    }, [])
-    
+ 
     return(
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild >
