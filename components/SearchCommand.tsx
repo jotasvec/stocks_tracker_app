@@ -105,20 +105,22 @@ const SearchCommand = ({renderAs = "button", label ="Add Stock", initialStocks }
                                             href={`/stocks/${stock.symbol}`}
                                             onClick={handleSelectedStock}
                                             className="search-item-link"
-                                        />
-                                        <TrendingUp className="h-4 w-4 text-gray-500" />
-                                        <div className="flex-1">
-                                            <div className="search-item-name">
-                                                {stock.name}
+                                        >
+
+                                            <TrendingUp className="h-4 w-4 text-gray-500" />
+                                            <div className="flex-1">
+                                                <div className="search-item-name">
+                                                    {stock.name}
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    {stock.symbol} | {stock.exchange} | {stock.type}
+                                                </div>
                                             </div>
-                                            <div className="text-sm text-gray-500">
-                                                {stock.symbol} | {stock.exchange} | {stock.type}
-                                            </div>
-                                        </div>
-                                        {/**
-                                         * TODO: Star 
-                                         */
-                                        }
+                                            {/**
+                                             * TODO: Star 
+                                             */
+                                            }
+                                        </Link>
                                         
                                     </li>
                                 )) }

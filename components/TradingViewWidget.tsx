@@ -3,20 +3,20 @@ import useTradingViewWidget from '@/hooks/useTradingViewWidget';
 import { cn } from '@/lib/utils';
 
 // TradingViewWidget.jsx
-import React, { memo } from 'react';
+import { memo } from 'react';
 
-interface TradingViewWidgetsProps{
+interface TradingViewWidgetProps{
     title?: string;
-    scriptURL: string;
-    config: Record<string, unknown>
+    scriptURL?: string;
+    config: Record<string, unknown>;
     height?: number; 
     className?: string; 
 };   
 
 
-function TradingViewWidget({ title, scriptURL, config, height=600, className }: TradingViewWidgetsProps) {
-  const containerRef = useTradingViewWidget(scriptURL, config, height)
-
+function TradingViewWidget({ title, scriptURL, config, height=600, className }: TradingViewWidgetProps) {
+  const finalScriptURL = scriptURL || 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+  const containerRef = useTradingViewWidget(finalScriptURL, config, height)
 
   return (
     <div className="w-full">
