@@ -5,7 +5,7 @@ import TradingViewWidget from "@/components/TradingViewWidget";
 import TradingViewMarketSummary from "@/components/TradingViewMarketSummary";
 import { SYMBOL_INFO_WIDGET_CONFIG, TOP_STORIES_WIDGET_CONFIG, POPULAR_STOCK_CATEGORIES } from "@/lib/constants";
 import { useState, useEffect, useCallback } from "react";
-import { getStocksBySymbols, searchStocks } from "@/lib/actions/finnhub.actions";
+import { searchStocks } from "@/lib/actions/finnhub.actions";
 import { RefreshCw } from "lucide-react";
 
 interface WatchlistTableClientProps {
@@ -32,12 +32,16 @@ const WatchlistTableClient = ({ watchlistStocks }: WatchlistTableClientProps) =>
   const loadCategoryStocks = useCallback( async (category: string) => {
     setIsLoading(true);
     try {
+      const allStocks = await searchStocks();
       const categorySymbols = POPULAR_STOCK_CATEGORIES[category as keyof typeof POPULAR_STOCK_CATEGORIES] || [];
-      
-      const stocks = await getStocksBySymbols(categorySymbols);
-      setPopularStocks(stocks);
 
-      if(stocks.length > 0 && viewMode === 'popular') setSelectedStock(stocks[0].symbol)
+      const filteredStocks = allStocks
+        .filter((stock: any) => categorySymbols.includes(stock.symbol))
+        .map((stock: any) => ({ ...stock, isInWatchlist: false }));
+
+      setPopularStocks(filteredStocks);
+
+      if(filteredStocks.length > 0 && viewMode === 'popular') setSelectedStock(filteredStocks[0].symbol)
 
       /* const filteredStocks = allStocks
         .filter(stock => categorySymbols.includes(stock.symbol))
@@ -61,13 +65,13 @@ const WatchlistTableClient = ({ watchlistStocks }: WatchlistTableClientProps) =>
 
   const displayStocks = viewMode === 'my-stocks' ? myWatchlistStocks : popularStocks;
 
-  // Debug logs to track state
-  console.log('WatchlistTableClient Debug:', {
+  // Debug displayStocks
+  console.log('WatchlistTableClient - displayStocks:', {
     viewMode,
     displayStocksLength: displayStocks.length,
     myWatchlistStocksLength: myWatchlistStocks.length,
     popularStocksLength: popularStocks.length,
-    selectedStock
+    displayStocksSample: displayStocks.slice(0, 2)
   });
 
   // Generate symbol sectors for TradingView Market Summary
@@ -131,21 +135,67 @@ const WatchlistTableClient = ({ watchlistStocks }: WatchlistTableClientProps) =>
   };
 
   // Add function to refetch watchlist stocks (client-side only)
-  const refetchWatchlistStocks = useCallback(() => {
-    // Reload the page to get fresh data from server
-    // This is a simple solution that ensures data consistency
-    // In future, this could be replaced with a proper API call
-    window.location.reload();
-  }, []);
+  const refetchWatchlistStocks = useCallback(async () => {
+    try {
+      console.log('Refetching watchlist stocks...');
+
+      // Fetch fresh watchlist symbols
+      const response = await fetch('/api/user/watchlist-symbols', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched watchlist symbols:', data.symbols);
+
+        if (data.symbols && data.symbols.length > 0) {
+          // Fetch stock data for these symbols
+          const allStocks = await searchStocks();
+          const updatedWatchlistStocks = allStocks
+            .filter(stock => data.symbols.includes(stock.symbol))
+            .map(stock => ({ ...stock, isInWatchlist: true }));
+
+          console.log('Updated watchlist stocks:', updatedWatchlistStocks.length);
+          setMyWatchlistStocks(updatedWatchlistStocks);
+
+          // Update selected stock if needed
+          if (updatedWatchlistStocks.length > 0 && !selectedStock) {
+            setSelectedStock(updatedWatchlistStocks[0].symbol);
+          }
+        } else {
+          console.log('No watchlist symbols found');
+          setMyWatchlistStocks([]);
+          setSelectedStock(null);
+        }
+      } else {
+        console.error('Failed to fetch watchlist symbols');
+        // Fallback to page reload
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error refreshing watchlist:', error);
+      // Fallback to simple reload
+      window.location.reload();
+    }
+  }, [selectedStock]);
 
   // Update local state when props change (for initial load)
   useEffect(() => {
-    // Sync localState
+    console.log('Setting myWatchlistStocks from props:', watchlistStocks.length);
     setMyWatchlistStocks(watchlistStocks);
     // Auto select the first stock if nothing is selected
     if( watchlistStocks.length > 0 && !selectedStock ) setSelectedStock(watchlistStocks[0].symbol);
-  
+
   }, [watchlistStocks, selectedStock]);
+
+  // Fetch fresh watchlist data when switching to my-stocks mode
+  useEffect(() => {
+    if (viewMode === 'my-stocks') {
+      console.log('View mode changed to my-stocks, refetching data...');
+      refetchWatchlistStocks();
+    }
+  }, [viewMode, refetchWatchlistStocks]);
 
   return (
     <>
@@ -264,7 +314,7 @@ const WatchlistTableClient = ({ watchlistStocks }: WatchlistTableClientProps) =>
               title={`${selectedStock} Overview`}
               scriptURL={`${scriptURL}symbol-overview.js`}
               config={SYMBOL_INFO_WIDGET_CONFIG(selectedStock)}
-              height={170}
+              height={300}
             />
           )}
         </div>
@@ -275,11 +325,19 @@ const WatchlistTableClient = ({ watchlistStocks }: WatchlistTableClientProps) =>
             title="Latest Market News"
             scriptURL={`${scriptURL}timeline.js`}
             config={TOP_STORIES_WIDGET_CONFIG}
-            height={600}
+            height={300}
             className="custom-chart"
           />
         </div>
       </section>
+      {selectedStock && !isLoading && (
+            <TradingViewWidget
+              title={`Stocks Overview`}
+              scriptURL={`${scriptURL}market-quotes.js`}
+              config={TOP_STORIES_WIDGET_CONFIG}
+              height={500}
+            />
+          )}
     </>
   );
 };

@@ -14,6 +14,23 @@ interface MongoError {
     code: number;
 }
 
+// Get watchlist symbols by user ID (more reliable than email lookup)
+export async function getWatchlistSymbolsByUserId(userId: string): Promise<string[]> {
+    if(!userId) return [];
+    try {
+        console.log('getWatchlistSymbolsByUserId - Looking for userId:', userId);
+
+        const items = await Watchlist.find({ userId }, { symbol: 1 }).lean();
+        console.log('getWatchlistSymbolsByUserId - Found items:', items.length, items.map(i => i.symbol));
+
+        return items.map((i) => String(i.symbol).toUpperCase());
+    } catch (error) {
+        console.error('getWatchlistSymbolsByUserId Error:', error)
+        return []
+    }
+}
+
+// Keep the old function for backward compatibility, but use userId internally
 export async function getWatchlistSymbolsByEmail(email: string): Promise<string[]> {
     if(!email) return [];
     try {
@@ -21,20 +38,42 @@ export async function getWatchlistSymbolsByEmail(email: string): Promise<string[
         const db = mongoose.connection.db;
         if(!db) throw new Error("Mongoose connection failed");
 
-        const user = await db.collection('users').findOne<{ _id?: unknown, id?: string, email?: string }>(
+        console.log('getWatchlistSymbolsByEmail - Looking for email:', email.toLowerCase());
+
+        // Find user by email first
+        const user = await db.collection('users').findOne(
             { email: email.toLowerCase() },
-            { projection: { _id: 1, id: 1, email: 1} } 
+            { projection: { _id: 1, id: 1, email: 1} }
         );
-        if(!user) return [];
+
+        if(!user) {
+            console.log('getWatchlistSymbolsByEmail - User not found for email:', email);
+            // Try to find user by other email variations
+            const users = await db.collection('users').find(
+                { email: { $regex: email, $options: 'i' } },
+                { projection: { _id: 1, id: 1, email: 1} }
+            ).limit(3).toArray();
+            console.log('getWatchlistSymbolsByEmail - Similar emails found:', users);
+
+            if (users.length === 0) {
+                console.log('getWatchlistSymbolsByEmail - No users found at all');
+                return [];
+            }
+
+            // Use the first matching user
+            const foundUser = users[0];
+            console.log('getWatchlistSymbolsByEmail - Using first matching user:', foundUser);
+            const userId = (foundUser.id as string) || String(foundUser._id || '');
+            return await getWatchlistSymbolsByUserId(userId);
+        }
+
+        // Use the same userId logic as addToWatchlist
         const userId = (user.id as string) || String(user._id || '');
-        const items = await Watchlist.find({ userId }, { symbol: 1 }).lean();
-        
-        return items.map((i) => String(i.symbol).toUpperCase());
+        console.log('getWatchlistSymbolsByEmail - Found user, using userId:', userId);
 
-
-        
+        return await getWatchlistSymbolsByUserId(userId);
     } catch (error) {
-        console.error('getWatchlistSymbolByEmail Error. ', error)
+        console.error('getWatchlistSymbolByEmail Error:', error)
         return []
     }
 }
@@ -105,9 +144,12 @@ export async function addToWatchlist(symbol: string, company: string): Promise<{
         const session = await auth.api.getSession({
             headers: await headers(),
         });
-        
+
         // Better-Auth typically puts the user ID in session.user.id
         const userId = session?.user?.id;
+        console.log('addToWatchlist - Session user:', session?.user);
+        console.log('addToWatchlist - Using userId:', userId, 'for symbol:', symbol);
+
         if (!userId) return { success: false, message: "Unauthorized - must be logged for adding the stock to the Watchlist" };
 
         await connectToDatabase();

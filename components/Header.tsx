@@ -5,6 +5,7 @@ import UserDropdown from './UserDropdown'
 import { searchStocks } from '@/lib/actions/finnhub.actions'
 
 const Header = async ({ user }:{ user: User | null}) => {
+    // Get base stock data - watchlist status will be handled by SearchCommand
     const initialStocks = await searchStocks();
   return (
     <header className='sticky top-0 header' >
@@ -15,13 +16,14 @@ const Header = async ({ user }:{ user: User | null}) => {
             </Link>
             <nav className='hidden sm:block' >
                 {/* NavItems */}
-                <NavItems initialStocks={initialStocks} />
+                <NavItems initialStocks={initialStocks} user={user} />
             </nav>
             <div>
             {
                 !user 
-                ? ( <Link href="/sign-in" >login</Link> )
-                : (
+                ? ( 
+                    <Link href="/sign-in" className={`hover:text-yellow-500 transition-colors`}>Sign in</Link> 
+                ):(
                     <div className='inline-flex items-center' >
                         <UserDropdown user={user} initialStocks={initialStocks} />
                         {user.name.split(/\s+/)[0]}

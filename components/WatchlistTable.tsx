@@ -60,7 +60,7 @@ const WatchlistTable = ({ watchlistStocks = [], onStockSelect }: WatchlistTableP
                 <Link 
                   href={`/stocks/${stock.symbol}`}
                   className="hover:text-yellow-500 transition-colors"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => e.preventDefault()}
                 >
                   {stock.name}
                 </Link>
@@ -69,7 +69,7 @@ const WatchlistTable = ({ watchlistStocks = [], onStockSelect }: WatchlistTableP
                 <Link 
                   href={`/stocks/${stock.symbol}`}
                   className="hover:text-yellow-500 transition-colors font-mono"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => e.preventDefault()}
                 >
                   {stock.symbol}
                 </Link>

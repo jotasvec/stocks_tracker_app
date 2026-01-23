@@ -14,8 +14,9 @@ import { Loader2, Search, TrendingUp, Star } from "lucide-react";
 import Link from "next/link";
 import { searchStocks } from "@/lib/actions/finnhub.actions";
 import { useDebounce } from "@/hooks/useDebounce";
-import { addToWatchlist, removeFromWatchlist } from "@/lib/actions/watchlist.actions";
+import { addToWatchlist, removeFromWatchlist, getWatchlistSymbolsByEmail } from "@/lib/actions/watchlist.actions";
 import { toast } from "sonner";
+import { auth } from "@/lib/betterAuth/auth";
 
 
 
@@ -25,9 +26,44 @@ const SearchCommand = ({renderAs = "button", label ="Add Stock", initialStocks }
     const [searchTerm, setSearchTerm] = useState("");
     const [stocks, setStocks] = useState<StockWithWatchlistStatus[]>(initialStocks)
     const [updatingStock, setUpdatingStock] = useState<string | null>(null)
+    const [userWatchlist, setUserWatchlist] = useState<string[]>([])
 
     const isSearchMode = !!searchTerm.trim();
     const displayStocks = isSearchMode ? stocks : stocks?.slice(0,10)
+
+    // Function to fetch user's watchlist
+    const fetchUserWatchlist = useCallback(async () => {
+        try {
+            // Try to get user email from a different approach
+            // Since we're on client side, we need to make a server call
+            const response = await fetch('/api/user/watchlist-symbols', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('SearchCommand - Fetched watchlist symbols:', data.symbols);
+                setUserWatchlist(data.symbols || []);
+                return data.symbols || [];
+            } else {
+                console.error('SearchCommand - Failed to fetch watchlist:', response.status);
+            }
+        } catch (error) {
+            console.error('SearchCommand - Error fetching user watchlist:', error);
+        }
+        return [];
+    }, [])
+
+    // Update stocks with watchlist status
+    const updateStocksWithWatchlist = useCallback((stockList: StockWithWatchlistStatus[], watchlistSymbols: string[]) => {
+        return stockList.map(stock => ({
+            ...stock,
+            isInWatchlist: watchlistSymbols.includes(stock.symbol)
+        }));
+    }, [])
 
     useEffect(() => {
         const down = (e: KeyboardEvent) => {
@@ -38,21 +74,37 @@ const SearchCommand = ({renderAs = "button", label ="Add Stock", initialStocks }
         }
         document.addEventListener("keydown", down)
         return () => document.removeEventListener("keydown", down)
-            
+
         }, []);
+
+    // Fetch user's watchlist on component mount
+    useEffect(() => {
+        fetchUserWatchlist().then(watchlistSymbols => {
+            if (stocks.length > 0) {
+                const updatedStocks = updateStocksWithWatchlist(stocks, watchlistSymbols);
+                setStocks(updatedStocks);
+            }
+        });
+    }, [fetchUserWatchlist, updateStocksWithWatchlist, stocks.length]);
     const handleSearch = useCallback(async () => {
-        if(!isSearchMode) return setStocks(initialStocks);
+        if(!isSearchMode) {
+            // When not searching, show initial stocks with updated watchlist status
+            const updatedInitialStocks = updateStocksWithWatchlist(initialStocks, userWatchlist);
+            return setStocks(updatedInitialStocks);
+        }
 
         setLoading(true);
         try {
             const results = await searchStocks(searchTerm.trim());
-            setStocks(results);
+            // Update search results with watchlist status
+            const updatedResults = updateStocksWithWatchlist(results, userWatchlist);
+            setStocks(updatedResults);
         } catch {
             setStocks([])
         } finally {
             setLoading(false)
         }
-    }, [isSearchMode, initialStocks, searchTerm])
+    }, [isSearchMode, initialStocks, searchTerm, updateStocksWithWatchlist, userWatchlist])
 
     const debounceSearch = useDebounce(handleSearch, 300);
 
@@ -69,19 +121,21 @@ const SearchCommand = ({renderAs = "button", label ="Add Stock", initialStocks }
     const handleToggleWatchlist = async (e: React.MouseEvent, stock: StockWithWatchlistStatus) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         setUpdatingStock(stock.symbol);
-        
+
         try {
             if (stock.isInWatchlist) {
                 const result = await removeFromWatchlist(stock.symbol);
                 if (result.success) {
                     // Update local state
-                    setStocks(prev => prev.map(s => 
-                        s.symbol === stock.symbol 
+                    setStocks(prev => prev.map(s =>
+                        s.symbol === stock.symbol
                             ? { ...s, isInWatchlist: false }
                             : s
                     ));
+                    // Update local watchlist
+                    setUserWatchlist(prev => prev.filter(symbol => symbol !== stock.symbol));
                     toast.success(result.message);
                 } else {
                     toast.error(result.message);
@@ -90,11 +144,13 @@ const SearchCommand = ({renderAs = "button", label ="Add Stock", initialStocks }
                 const result = await addToWatchlist(stock.symbol, stock.name);
                 if (result.success) {
                     // Update local state
-                    setStocks(prev => prev.map(s => 
-                        s.symbol === stock.symbol 
+                    setStocks(prev => prev.map(s =>
+                        s.symbol === stock.symbol
                             ? { ...s, isInWatchlist: true }
                             : s
                     ));
+                    // Update local watchlist
+                    setUserWatchlist(prev => [...prev, stock.symbol]);
                     toast.success(result.message);
                 } else {
                     toast.error(result.message);

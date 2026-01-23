@@ -58,7 +58,7 @@ const UserDropdown = ({ user, initialStocks }:{ user: User, initialStocks: Stock
                 </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-gray-600" />
-            <nav className="sm:hidden"> <NavItems initialStocks={initialStocks} /> </nav>
+            <nav className="sm:hidden"> <NavItems initialStocks={initialStocks} user={user} /> </nav>
             <DropdownMenuItem>
                 <Link href={`/watchlist`} className={`hover:text-yellow-500 transition-colors`} > 
                     Watchlist

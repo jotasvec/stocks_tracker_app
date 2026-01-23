@@ -15,7 +15,7 @@ const WatchlistPage = async () => {
 
   const userEmail = session.user.email;
   const watchlistSymbols = await getWatchlistSymbolsByEmail(userEmail);
-  
+
   // Get stock data for watchlist symbols
   let watchlistStocks: StockWithWatchlistStatus[] = [];
   if (watchlistSymbols.length > 0) {
