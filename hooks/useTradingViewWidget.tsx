@@ -14,14 +14,15 @@ const useTradingViewWidget = (scriptURL : string, config: Record<string, unknown
         const script = document.createElement("script");
         script.src = scriptURL
         script.async = true;
-        script.innerHTML = JSON.stringify(config)
+        script.textContent = JSON.stringify(config)
         containerRef.current.appendChild(script);
         containerRef.current.dataset.loaded = 'true';
+        const current = containerRef.current
 
         return () => {
-            if(containerRef.current) {
-                containerRef.current.innerHTML = '';
-                delete containerRef.current.dataset.loaded;
+            if(current) {
+                current.innerHTML = '';
+                delete current.dataset.loaded;
             }
         }
     },

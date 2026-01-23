@@ -4,7 +4,7 @@ import NavItems from './NavItems'
 import UserDropdown from './UserDropdown'
 import { searchStocks } from '@/lib/actions/finnhub.actions'
 
-const Header = async ({ user }:{ user: User}) => {
+const Header = async ({ user }:{ user: User | null}) => {
     const initialStocks = await searchStocks();
   return (
     <header className='sticky top-0 header' >
@@ -17,7 +17,18 @@ const Header = async ({ user }:{ user: User}) => {
                 {/* NavItems */}
                 <NavItems initialStocks={initialStocks} />
             </nav>
-            <UserDropdown user={user} initialStocks={initialStocks} />
+            <div>
+            {
+                !user 
+                ? ( <Link href="/sign-in" >login</Link> )
+                : (
+                    <div className='inline-flex items-center' >
+                        <UserDropdown user={user} initialStocks={initialStocks} />
+                        {user.name.split(/\s+/)[0]}
+                    </div>
+                )
+            }
+            </div>
         </div>
     </header>
   )

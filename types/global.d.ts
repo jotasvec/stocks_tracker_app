@@ -146,6 +146,9 @@ declare global {
         changeFormatted?: string;
         marketCap?: string;
         peRatio?: string;
+        exchange?: string, // Finnhub default
+        type?: string,
+        isInWatchlist?: boolean,
     };
 
     type AlertsListProps = {

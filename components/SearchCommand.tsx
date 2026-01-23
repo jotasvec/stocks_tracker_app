@@ -10,10 +10,12 @@ import {
 } from "@/components/ui/command"
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "./ui/button";
-import { Loader2, Search, TrendingUp } from "lucide-react";
+import { Loader2, Search, TrendingUp, Star } from "lucide-react";
 import Link from "next/link";
 import { searchStocks } from "@/lib/actions/finnhub.actions";
 import { useDebounce } from "@/hooks/useDebounce";
+import { addToWatchlist, removeFromWatchlist } from "@/lib/actions/watchlist.actions";
+import { toast } from "sonner";
 
 
 
@@ -22,6 +24,7 @@ const SearchCommand = ({renderAs = "button", label ="Add Stock", initialStocks }
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [stocks, setStocks] = useState<StockWithWatchlistStatus[]>(initialStocks)
+    const [updatingStock, setUpdatingStock] = useState<string | null>(null)
 
     const isSearchMode = !!searchTerm.trim();
     const displayStocks = isSearchMode ? stocks : stocks?.slice(0,10)
@@ -61,6 +64,48 @@ const SearchCommand = ({renderAs = "button", label ="Add Stock", initialStocks }
         setOpen(false);
         setSearchTerm('');
         setStocks(initialStocks)
+    }
+
+    const handleToggleWatchlist = async (e: React.MouseEvent, stock: StockWithWatchlistStatus) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        setUpdatingStock(stock.symbol);
+        
+        try {
+            if (stock.isInWatchlist) {
+                const result = await removeFromWatchlist(stock.symbol);
+                if (result.success) {
+                    // Update local state
+                    setStocks(prev => prev.map(s => 
+                        s.symbol === stock.symbol 
+                            ? { ...s, isInWatchlist: false }
+                            : s
+                    ));
+                    toast.success(result.message);
+                } else {
+                    toast.error(result.message);
+                }
+            } else {
+                const result = await addToWatchlist(stock.symbol, stock.name);
+                if (result.success) {
+                    // Update local state
+                    setStocks(prev => prev.map(s => 
+                        s.symbol === stock.symbol 
+                            ? { ...s, isInWatchlist: true }
+                            : s
+                    ));
+                    toast.success(result.message);
+                } else {
+                    toast.error(result.message);
+                }
+            }
+        } catch (error) {
+            console.error('Watchlist toggle error:', error);
+            toast.error('Failed to update watchlist');
+        } finally {
+            setUpdatingStock(null);
+        }
     }
     return (
         <>
@@ -116,10 +161,19 @@ const SearchCommand = ({renderAs = "button", label ="Add Stock", initialStocks }
                                                     {stock.symbol} | {stock.exchange} | {stock.type}
                                                 </div>
                                             </div>
-                                            {/**
-                                             * TODO: Star 
-                                             */
-                                            }
+                                            <button
+                                                onClick={(e) => handleToggleWatchlist(e, stock)}
+                                                disabled={updatingStock === stock.symbol}
+                                                className="p-2 hover:bg-gray-700 rounded-full transition-colors"
+                                            >
+                                                {updatingStock === stock.symbol ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : stock.isInWatchlist ? (
+                                                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                                                ) : (
+                                                    <Star className="h-4 w-4 text-gray-400" />
+                                                )}
+                                            </button>
                                         </Link>
                                         
                                     </li>

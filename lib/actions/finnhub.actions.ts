@@ -179,3 +179,36 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
     return [];
   }
 });
+
+export const getStocksBySymbols = cache(async (symbols: string[]): Promise<StockWithWatchlistStatus[]> => {
+  try {
+    const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+    
+    const results = await Promise.all(
+      symbols.map(async (sym) => {
+        try {
+          const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(sym)}&token=${token}`;
+          const profile = await fetchJSON<any>(url, 3600); // Cache for 1 hour
+          
+          if (!profile || !profile.name) return null;
+
+          return {
+            symbol: sym.toUpperCase(),
+            name: profile.name,
+            exchange: profile.exchange || 'US',
+            type: 'Common Stock',
+            isInWatchlist: false, // Will be updated by the client/layout
+          };
+        } catch (e) {
+          console.error(e)
+          return null;
+        }
+      })
+    );
+
+    return results.filter((s): s is StockWithWatchlistStatus => s !== null);
+  } catch (err) {
+    console.error("Error fetching stocks by symbols:", err);
+    return [];
+  }
+});

@@ -229,6 +229,13 @@
   .search-list-empty {
     @apply py-6 !bg-transparent text-center text-gray-500;
   }
+  .tradingview-market-summary-container {
+    @apply !bg-gray-800 rounded-lg overflow-hidden;
+    min-height: 300px;
+  }
+  .tradingview-market-summary-container tv-market-summary {
+    @apply w-full h-full;
+  }
   .search-input {
     @apply !bg-gray-800 border-0 text-gray-400 placeholder:text-gray-500 focus:ring-0 text-base h-14 pr-10;
   }
@@ -266,7 +273,7 @@
     @apply flex flex-col items-center justify-center text-center;
   }
   .watchlist-star {
-    @apply h-16 w-16 text-gray-500 mb-4;
+    @apply h-8 w-8 text-gray-500;
   }
   .empty-title {
     @apply text-xl font-semibold text-gray-400 mb-2;
@@ -302,7 +309,7 @@
     @apply text-xl md:text-2xl font-bold text-gray-100;
   }
   .watchlist-table {
-    @apply !relative overflow-hidden !w-full bg-gray-800 border !border-gray-600 !rounded-lg;
+    @apply relative! overflow-hidden w-full! bg-gray-800 border border-gray-600! rounded-lg!;
   }
   .table-header-row {
     @apply text-gray-400 font-medium bg-gray-700 border-b border-gray-600 hover:bg-gray-700;
