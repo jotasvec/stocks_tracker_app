@@ -42,7 +42,6 @@ const WatchlistTableClient = ({ watchlistStocks }: WatchlistTableClientProps) =>
       setPopularStocks(filteredStocks);
 
       if(filteredStocks.length > 0 && viewMode === 'popular') setSelectedStock(filteredStocks[0].symbol)
-
       /* const filteredStocks = allStocks
         .filter(stock => categorySymbols.includes(stock.symbol))
         .map(stock => ({ ...stock, isInWatchlist: false }));
